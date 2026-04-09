@@ -1,0 +1,13 @@
+module(
+    name = "bazel_test",
+    version = "1.0.0",
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "rules_dotnet", version = "0.21.5")
+#bazel_dep(name = "rules_dotnet_nuget", version = "0.10.0")
+#dotnet = use_extension("@rules_dotnet//dotnet:extensions.bzl", "dotnet")
+#dotnet.toolchain(name = "local", dotnet_root="C:\\Program Files\\dotnet\\sdk")
+#use_repo(dotnet, "local")
+
+#register_toolchains("@local//:all")

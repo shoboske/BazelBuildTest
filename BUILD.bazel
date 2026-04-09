@@ -1,0 +1,26 @@
+load(
+    "@rules_dotnet//dotnet:defs.bzl",
+    "csharp_binary",
+    "publish_binary",
+)
+
+csharp_binary(
+    name = "bazeltest",
+    srcs = glob(["*.cs"]),
+    appsetting_files = [
+        "appsettings.json",
+    ] + glob(["appsettings.*.json"]),
+    compiler_options = ["/features:InterceptorsNamespaces=Microsoft.AspNetCore.Http.Generated"],
+    nullable = "enable",
+    project_sdk = "web",
+    target_frameworks = ["net10.0"],
+    deps = [
+    ],
+)
+
+publish_binary(
+    name = "publish",
+    binary = ":bazeltest",
+    self_contained = True,
+    target_framework = "net10.0",
+)

@@ -101,14 +101,26 @@ jobs:
     name: Bazel Build (Windows)
     runs-on: windows-latest
 
+    env:
+      BAZEL_DISK_CACHE: ${{ github.workspace }}\.bazel-disk-cache
+      BAZEL_REPO_CACHE: ${{ github.workspace }}\.bazel-repo-cache
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Ensure cache directories exist before actions/cache tries to save them
+      - name: Create cache directories
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-disk-cache"
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-repo-cache"
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-output-base"
+        shell: pwsh
+
       - name: Restore Bazel disk cache
         uses: actions/cache@v4
         with:
-          path: C:/tmp/bazel-disk-cache
+          path: ${{ github.workspace }}\.bazel-disk-cache
           key: bazel-disk-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', '**/*.bazel', '**/*.bzl', '.bazelrc', '.bazelversion') }}
           restore-keys: |
             bazel-disk-${{ runner.os }}-
@@ -116,7 +128,7 @@ jobs:
       - name: Restore Bazel repository cache
         uses: actions/cache@v4
         with:
-          path: C:/tmp/bazel-repo-cache
+          path: ${{ github.workspace }}\.bazel-repo-cache
           key: bazel-repo-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock') }}
           restore-keys: |
             bazel-repo-${{ runner.os }}-
@@ -124,7 +136,7 @@ jobs:
       - name: Restore Bazel output base
         uses: actions/cache@v4
         with:
-          path: ~/.cache/bazel
+          path: ${{ github.workspace }}\.bazel-output-base
           key: bazel-output-${{ runner.os }}-${{ hashFiles('.bazelversion') }}
           restore-keys: |
             bazel-output-${{ runner.os }}-
@@ -135,11 +147,11 @@ jobs:
           bazelisk-version: "1.25.0"
 
       - name: Build all targets
-        run: bazel build //... --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache
+        run: bazel build //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
 
       - name: Run tests
-        run: bazel test //... --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache
+        run: bazel test //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
         continue-on-error: true
 
       - name: Build publish binary
-        run: bazel build //:publish --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache
+        run: bazel build //:publish --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"

@@ -5,4 +5,9 @@
   <!-- Uncomment to include parent Directory.Build.props file -->
   <!--<Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />-->
 
+  <!-- Exclude Bazel symlink directories and nested project build artifacts from MSBuild default item globs -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bazel-*/**;BazelBuildTest.Shared/**</DefaultItemExcludes>
+  </PropertyGroup>
+
 </Project>

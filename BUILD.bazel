@@ -15,6 +15,7 @@ csharp_binary(
     project_sdk = "web",
     target_frameworks = ["net10.0"],
     deps = [
+        "//BazelBuildTest.Shared",
     ],
 )
 

@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using BazelBuildTest.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,3 @@ app.MapGet("/weatherforecast", () =>
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

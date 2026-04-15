@@ -1,0 +1,145 @@
+name: Bazel Build
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Bazel Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # Cache: Bazel disk cache (action outputs)
+      # This caches compiled artifacts so unchanged targets aren't rebuilt
+      # ---------------------------------------------------------------
+      - name: Restore Bazel disk cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/bazel-disk-cache
+          key: bazel-disk-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', '**/*.bazel', '**/*.bzl', '.bazelrc', '.bazelversion') }}
+          restore-keys: |
+            bazel-disk-${{ runner.os }}-
+
+      # ---------------------------------------------------------------
+      # Cache: Bazel repository cache (external dependencies)
+      # This caches downloaded external deps so they aren't re-fetched
+      # ---------------------------------------------------------------
+      - name: Restore Bazel repository cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/bazel-repo-cache
+          key: bazel-repo-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-repo-${{ runner.os }}-
+
+      # ---------------------------------------------------------------
+      # Cache: Bazel output base (install base, server, etc.)
+      # This avoids re-extracting the Bazel install on every run
+      # ---------------------------------------------------------------
+      - name: Restore Bazel output base
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-output-${{ runner.os }}-${{ hashFiles('.bazelversion') }}
+          restore-keys: |
+            bazel-output-${{ runner.os }}-
+
+      # ---------------------------------------------------------------
+      # Setup Bazel via Bazelisk
+      # Bazelisk reads .bazelversion and installs the correct version
+      # ---------------------------------------------------------------
+      - name: Setup Bazel (via Bazelisk)
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          bazelisk-version: "1.25.0"
+
+      # ---------------------------------------------------------------
+      # Build all targets with CI config
+      # ---------------------------------------------------------------
+      - name: Build all targets
+        run: bazel build //... --config=ci
+
+      # ---------------------------------------------------------------
+      # Run tests (if any exist)
+      # ---------------------------------------------------------------
+      - name: Run tests
+        run: bazel test //... --config=ci || true
+        # `|| true` because there are no test targets yet;
+        # remove this once you add tests
+
+      # ---------------------------------------------------------------
+      # Publish binary
+      # ---------------------------------------------------------------
+      - name: Build publish binary
+        run: bazel build //:publish --config=ci
+
+      # ---------------------------------------------------------------
+      # Upload build artifacts
+      # ---------------------------------------------------------------
+      - name: Upload published binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-binary
+          path: bazel-bin/publish/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # Optional: Build on Windows to match local dev environment
+  build-windows:
+    name: Bazel Build (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore Bazel disk cache
+        uses: actions/cache@v4
+        with:
+          path: C:/tmp/bazel-disk-cache
+          key: bazel-disk-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', '**/*.bazel', '**/*.bzl', '.bazelrc', '.bazelversion') }}
+          restore-keys: |
+            bazel-disk-${{ runner.os }}-
+
+      - name: Restore Bazel repository cache
+        uses: actions/cache@v4
+        with:
+          path: C:/tmp/bazel-repo-cache
+          key: bazel-repo-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-repo-${{ runner.os }}-
+
+      - name: Restore Bazel output base
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-output-${{ runner.os }}-${{ hashFiles('.bazelversion') }}
+          restore-keys: |
+            bazel-output-${{ runner.os }}-
+
+      - name: Setup Bazel (via Bazelisk)
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          bazelisk-version: "1.25.0"
+
+      - name: Build all targets
+        run: bazel build //... --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache
+
+      - name: Run tests
+        run: bazel test //... --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache
+        continue-on-error: true
+
+      - name: Build publish binary
+        run: bazel build //:publish --config=ci --disk_cache=C:/tmp/bazel-disk-cache --repository_cache=C:/tmp/bazel-repo-cache

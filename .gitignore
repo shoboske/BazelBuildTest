@@ -5,6 +5,7 @@
 
 # bazel
 bazel-*
+.bazelrc.user
 
 # dotenv files
 .env

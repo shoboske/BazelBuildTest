@@ -1,0 +1,82 @@
+# =============================================================================
+# .bazelrc - Bazel configuration for BazelBuildTest
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Common flags (apply to all commands)
+# ---------------------------------------------------------------------------
+
+# Enable Bzlmod (default in Bazel 8, but explicit for clarity)
+common --enable_bzlmod
+
+# Show timestamps in log output
+common --show_timestamps
+
+# Use colored output
+common --color=yes
+
+# ---------------------------------------------------------------------------
+# Build flags
+# ---------------------------------------------------------------------------
+
+# Use the local disk cache for action results
+# This directory is reused across builds to avoid re-executing unchanged actions
+build --disk_cache=~/.cache/bazel-disk-cache
+
+# Enable the repository cache for external dependencies
+build --repository_cache=~/.cache/bazel-repo-cache
+
+# Number of jobs: auto-detect based on available CPUs
+build --jobs=auto
+
+# Show progress messages for long-running actions
+build --show_progress_rate_limit=0.5
+
+# Improve build performance with worker sandboxing
+build --worker_sandboxing
+
+# ---------------------------------------------------------------------------
+# Remote cache (used in CI)
+# Uncomment and configure if you set up a remote cache server (e.g., bazel-remote, BuildBuddy, EngFlow)
+# ---------------------------------------------------------------------------
+# build:ci --remote_cache=grpcs://your-remote-cache.example.com
+# build:ci --remote_upload_local_results=true
+
+# ---------------------------------------------------------------------------
+# CI-specific flags (activated with --config=ci)
+# ---------------------------------------------------------------------------
+
+# Announce all subcommands for better CI log readability
+build:ci --subcommands=pretty_print
+
+# Verbose failures in CI for easier debugging
+build:ci --verbose_failures
+
+# Disable local sandbox in CI (GitHub Actions runners don't support it well on all platforms)
+build:ci --spawn_strategy=local
+
+# Keep going on errors in CI to report all failures at once
+build:ci --keep_going
+
+# Disable interactive progress in CI
+build:ci --curses=no
+
+# Use disk cache in CI (path is overridden by the workflow)
+build:ci --disk_cache=/tmp/bazel-disk-cache
+
+# Use repository cache in CI
+build:ci --repository_cache=/tmp/bazel-repo-cache
+
+# ---------------------------------------------------------------------------
+# Test flags
+# ---------------------------------------------------------------------------
+
+test --test_output=errors
+test --test_verbose_timeout_warnings
+
+# ---------------------------------------------------------------------------
+# User-specific overrides (not checked in)
+# ---------------------------------------------------------------------------
+
+# Import user-specific settings from .bazelrc.user (if it exists)
+try-import %workspace%/.bazelrc.user

@@ -66,10 +66,11 @@ jobs:
           bazelisk-version: "1.25.0"
 
       # ---------------------------------------------------------------
-      # Build all targets with CI config
+      # Build self-contained publish binary
+      # This also compiles :bazeltest and //BazelBuildTest.Shared as deps
       # ---------------------------------------------------------------
-      - name: Build all targets
-        run: bazel build //... --config=ci
+      - name: Build self-contained binary
+        run: bazel build //:publish --config=ci
 
       # ---------------------------------------------------------------
       # Run tests (if any exist)
@@ -80,20 +81,14 @@ jobs:
         # remove this once you add tests
 
       # ---------------------------------------------------------------
-      # Publish binary
-      # ---------------------------------------------------------------
-      - name: Build publish binary
-        run: bazel build //:publish --config=ci
-
-      # ---------------------------------------------------------------
       # Upload build artifacts
       # ---------------------------------------------------------------
       - name: Upload published binary
         uses: actions/upload-artifact@v4
         with:
-          name: published-binary
+          name: published-binary-linux
           path: bazel-bin/publish/
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: warn
 
   # Optional: Build on Windows to match local dev environment
@@ -146,12 +141,17 @@ jobs:
         with:
           bazelisk-version: "1.25.0"
 
-      - name: Build all targets
-        run: bazel build //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
+      - name: Build self-contained binary
+        run: bazel build //:publish --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
 
       - name: Run tests
         run: bazel test //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
         continue-on-error: true
 
-      - name: Build publish binary
-        run: bazel build //:publish --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
+      - name: Upload published binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-binary-windows
+          path: bazel-bin/publish/
+          retention-days: 3
+          if-no-files-found: warn

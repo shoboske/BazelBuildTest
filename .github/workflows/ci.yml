@@ -152,6 +152,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: published-binary-windows
-          path: bazel-bin/publish/
+          path: .\bazel-bin\publish\
           retention-days: 3
           if-no-files-found: warn

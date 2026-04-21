@@ -96,6 +96,10 @@ jobs:
     name: Bazel Build (Windows)
     runs-on: windows-latest
 
+    env:
+      BAZEL_DISK_CACHE: ${{ runner.temp }}/_bazel-disk-cache
+      BAZEL_REPO_CACHE: ${{ runner.temp }}/_bazel-repo-cache
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -106,7 +110,7 @@ jobs:
       - name: Restore Bazel disk cache
         uses: actions/cache@v4
         with:
-          path: D:/_bazel-disk-cache
+          path: ${{ runner.temp }}/_bazel-disk-cache
           key: bazel-disk-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', '**/*.bazel', '**/*.bzl', '.bazelrc', '.bazelversion') }}
           restore-keys: |
             bazel-disk-${{ runner.os }}-
@@ -117,7 +121,7 @@ jobs:
       - name: Restore Bazel repository cache
         uses: actions/cache@v4
         with:
-          path: D:/_bazel-repo-cache
+          path: ${{ runner.temp }}/_bazel-repo-cache
           key: bazel-repo-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock') }}
           restore-keys: |
             bazel-repo-${{ runner.os }}-
@@ -138,15 +142,15 @@ jobs:
         run: |
           set -euo pipefail
           bazel build //:publish --config=ci \
-            --disk_cache="D:/_bazel-disk-cache" \
-            --repository_cache="D:/_bazel-repo-cache"
+            --disk_cache="${BAZEL_DISK_CACHE}" \
+            --repository_cache="${BAZEL_REPO_CACHE}"
 
       # ---------------------------------------------------------------
       # Run tests (if any exist)
       # ---------------------------------------------------------------
       - name: Run tests
         shell: bash
-        run: bazel test //... --config=ci --disk_cache="D:/_bazel-disk-cache" --repository_cache="D:/_bazel-repo-cache" || true
+        run: bazel test //... --config=ci --disk_cache="${BAZEL_DISK_CACHE}" --repository_cache="${BAZEL_REPO_CACHE}" || true
         # `|| true` because there are no test targets yet
 
       # ---------------------------------------------------------------

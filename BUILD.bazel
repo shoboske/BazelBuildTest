@@ -9,6 +9,7 @@ csharp_binary(
     srcs = glob(["*.cs"]),
     appsetting_files = [
         "appsettings.json",
+        "hosting.json",
     ] + glob(["appsettings.*.json"]),
     compiler_options = ["/features:InterceptorsNamespaces=Microsoft.AspNetCore.Http.Generated"],
     nullable = "enable",

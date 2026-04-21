@@ -1,11 +1,16 @@
 using System;
 using System.Linq;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BazelBuildTest.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("hosting.json", optional: false);
+builder.WebHost.UseUrls(builder.Configuration["Urls"]!);
 
 // Add services to the container.
 

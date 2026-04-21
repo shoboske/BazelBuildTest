@@ -142,7 +142,7 @@ jobs:
           bazelisk-version: "1.25.0"
 
       - name: Build self-contained binary
-        run: bazel build //:publish --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
+        run: bazel build //:publish --verbose --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
 
       - name: Run tests
         run: bazel test //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"

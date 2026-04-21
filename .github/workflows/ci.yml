@@ -96,10 +96,6 @@ jobs:
     name: Bazel Build (Windows)
     runs-on: windows-latest
 
-    env:
-      BAZEL_DISK_CACHE: ${{ runner.temp }}/_bazel-disk-cache
-      BAZEL_REPO_CACHE: ${{ runner.temp }}/_bazel-repo-cache
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -142,15 +138,15 @@ jobs:
         run: |
           set -euo pipefail
           bazel build //:publish --config=ci \
-            --disk_cache="${BAZEL_DISK_CACHE}" \
-            --repository_cache="${BAZEL_REPO_CACHE}"
+            --disk_cache="$RUNNER_TEMP/_bazel-disk-cache" \
+            --repository_cache="$RUNNER_TEMP/_bazel-repo-cache"
 
       # ---------------------------------------------------------------
       # Run tests (if any exist)
       # ---------------------------------------------------------------
       - name: Run tests
         shell: bash
-        run: bazel test //... --config=ci --disk_cache="${BAZEL_DISK_CACHE}" --repository_cache="${BAZEL_REPO_CACHE}" || true
+        run: bazel test //... --config=ci --disk_cache="$RUNNER_TEMP/_bazel-disk-cache" --repository_cache="$RUNNER_TEMP/_bazel-repo-cache" || true
         # `|| true` because there are no test targets yet
 
       # ---------------------------------------------------------------

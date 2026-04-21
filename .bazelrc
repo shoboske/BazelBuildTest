@@ -61,11 +61,17 @@ build:ci --keep_going
 # Disable interactive progress in CI
 build:ci --curses=no
 
-# Use disk cache in CI (path is overridden by the workflow)
-build:ci --disk_cache=/tmp/bazel-disk-cache
+# ---------------------------------------------------------------------------
+# CI-Linux flags (activated with --config=ci-linux)
+# Disk and repository cache paths for Linux runners
+# ---------------------------------------------------------------------------
+build:ci-linux --disk_cache=/tmp/bazel-disk-cache
+build:ci-linux --repository_cache=/tmp/bazel-repo-cache
 
-# Use repository cache in CI
-build:ci --repository_cache=/tmp/bazel-repo-cache
+# ---------------------------------------------------------------------------
+# CI-Windows flags (activated with --config=ci-windows)
+# Windows runners don't have /tmp; cache paths are passed on the command line
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Test flags

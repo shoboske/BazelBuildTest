@@ -70,13 +70,13 @@ jobs:
       # This also compiles :bazeltest and //BazelBuildTest.Shared as deps
       # ---------------------------------------------------------------
       - name: Build self-contained binary
-        run: bazel build //:publish --config=ci
+        run: bazel build //:publish --config=ci --config=ci-linux
 
       # ---------------------------------------------------------------
       # Run tests (if any exist)
       # ---------------------------------------------------------------
       - name: Run tests
-        run: bazel test //... --config=ci || true
+        run: bazel test //... --config=ci --config=ci-linux || true
         # `|| true` because there are no test targets yet;
         # remove this once you add tests
 
@@ -89,69 +89,81 @@ jobs:
           name: published-binary-linux
           path: bazel-bin/publish/
           retention-days: 3
-          if-no-files-found: warn
+          if-no-files-found: error
 
   # Optional: Build on Windows to match local dev environment
   build-windows:
     name: Bazel Build (Windows)
     runs-on: windows-latest
 
-    env:
-      BAZEL_DISK_CACHE: ${{ github.workspace }}\.bazel-disk-cache
-      BAZEL_REPO_CACHE: ${{ github.workspace }}\.bazel-repo-cache
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Ensure cache directories exist before actions/cache tries to save them
-      - name: Create cache directories
-        run: |
-          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-disk-cache"
-          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-repo-cache"
-          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.bazel-output-base"
-        shell: pwsh
-
+      # ---------------------------------------------------------------
+      # Cache: Bazel disk cache (action outputs)
+      # ---------------------------------------------------------------
       - name: Restore Bazel disk cache
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}\.bazel-disk-cache
+          path: ${{ runner.temp }}/_bazel-disk-cache
           key: bazel-disk-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', '**/*.bazel', '**/*.bzl', '.bazelrc', '.bazelversion') }}
           restore-keys: |
             bazel-disk-${{ runner.os }}-
 
+      # ---------------------------------------------------------------
+      # Cache: Bazel repository cache (external dependencies)
+      # ---------------------------------------------------------------
       - name: Restore Bazel repository cache
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}\.bazel-repo-cache
+          path: ${{ runner.temp }}/_bazel-repo-cache
           key: bazel-repo-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock') }}
           restore-keys: |
             bazel-repo-${{ runner.os }}-
 
-      - name: Restore Bazel output base
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}\.bazel-output-base
-          key: bazel-output-${{ runner.os }}-${{ hashFiles('.bazelversion') }}
-          restore-keys: |
-            bazel-output-${{ runner.os }}-
-
+      # ---------------------------------------------------------------
+      # Setup Bazel via Bazelisk
+      # ---------------------------------------------------------------
       - name: Setup Bazel (via Bazelisk)
         uses: bazel-contrib/setup-bazel@0.14.0
         with:
           bazelisk-version: "1.25.0"
 
+      # ---------------------------------------------------------------
+      # Build self-contained publish binary
+      # ---------------------------------------------------------------
       - name: Build self-contained binary
-        run: bazel build //:publish --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
+        shell: bash
+        run: |
+          set -euo pipefail
+          bazel build //:publish --config=ci \
+            --disk_cache="$RUNNER_TEMP/_bazel-disk-cache" \
+            --repository_cache="$RUNNER_TEMP/_bazel-repo-cache"
 
+      # ---------------------------------------------------------------
+      # Run tests (if any exist)
+      # ---------------------------------------------------------------
       - name: Run tests
-        run: bazel test //... --config=ci --disk_cache="${{ github.workspace }}\.bazel-disk-cache" --repository_cache="${{ github.workspace }}\.bazel-repo-cache"
-        continue-on-error: true
+        shell: bash
+        run: bazel test //... --config=ci --disk_cache="$RUNNER_TEMP/_bazel-disk-cache" --repository_cache="$RUNNER_TEMP/_bazel-repo-cache" || true
+        # `|| true` because there are no test targets yet
+
+      # ---------------------------------------------------------------
+      # Verify and upload build artifacts
+      # ---------------------------------------------------------------
+      - name: Verify build output
+        shell: bash
+        run: |
+          echo "--- bazel info ---"
+          bazel info output_path
+          echo "--- checking bazel-bin/publish ---"
+          ls -la bazel-bin/publish/ || echo "bazel-bin/publish not found"
 
       - name: Upload published binary
         uses: actions/upload-artifact@v4
         with:
           name: published-binary-windows
-          path: .\bazel-bin\publish\
+          path: bazel-bin/publish/
           retention-days: 3
-          if-no-files-found: warn
+          if-no-files-found: error
